@@ -13,12 +13,12 @@
 	Rule_4: .asciiz "Example: when the player input for the ship 2x1 by input 1 4 2 4 - x_start(1), y_start(4), x_end(2), y_end(4) \n"
 	Rule_5: .asciiz "The player must input a right number (0-6) and the address of the ship must be in the same row or column \n"
         Rule_6: .asciiz "The player can't put the ship on the other ship \n"
-        hit: .asciiz "HIT!"
-        miss: .asciiz "MISS!"
+        hit: .asciiz "HIT!\n"
+        miss: .asciiz "MISS!\n"
         input_2x1: .asciiz "Please input the address of the 2x1 ship \n"
         input_3x1: .asciiz "Please input the address of the 3x1 ship \n"
         input_4x1: .asciiz "Please input the address of the 4x1 ship \n"
-        Rule_input_ship: .asciiz "When players input the address of the 2x1, the (x_end=x_start+-2 and y_end=y_start) or ( y_end=y_start+-2 and x_end=x_start) and all of them must be in 0 to 6. \n"
+        Rule_input_ship: .asciiz "When players input the address of the 2x1, the (x_end=x_start+-1 and y_end=y_start) or ( y_end=y_start+-1 and x_end=x_start) and all of them must be in 0 to 6. \n"
         Rule_hit1: .asciiz "Please input x and y and they must be in 0 to 6 \n"
         Rule_hit2: .asciiz "When you hit the ship, the board will show HIT! and when you miss the ship, the board will show MISS! \n"
         Error_input_ship: .asciiz "Please input again the address of the ship again \n"
@@ -91,36 +91,42 @@ start_game:
         la $a0, input_2x1
         syscall
         la $s2, First_Player_Board
+        li $s3, 1
         jal input_ship
 
         li $v0, 4
         la $a0, input_2x1
         syscall
         la $s2, First_Player_Board
+        li $s3, 1
         jal input_ship
         
         li $v0, 4
         la $a0, input_2x1
         syscall
         la $s2, First_Player_Board
+        li $s3, 1
         jal input_ship
 
         li $v0, 4
         la $a0, input_3x1
         syscall
         la $s2, First_Player_Board
+        li $s3, 2
         jal input_ship
 
         li $v0, 4
         la $a0, input_3x1
         syscall
         la $s2, First_Player_Board
+        li $s3, 2
         jal input_ship
 
         li $v0, 4
         la $a0, input_4x1
         syscall
         la $s2,First_Player_Board
+        li $s3, 3
         jal input_ship
 
         li $v0, 4
@@ -131,41 +137,47 @@ start_game:
         la $a0, input_2x1
         syscall
         la $s2, Second_Player_Board
+        li $s3, 1
         jal input_ship
 
         li $v0, 4
         la $a0, input_2x1
         syscall
         la $s2, Second_Player_Board
+        li $s3, 1
         jal input_ship
 
         li $v0, 4
         la $a0, input_2x1
         syscall
         la $s2, Second_Player_Board
+        li $s3, 1
         jal input_ship
 
         li $v0, 4
         la $a0, input_3x1
         syscall
         la $s2, Second_Player_Board
+        li $s3,2
         jal input_ship
 
         li $v0, 4
         la $a0, input_3x1
         syscall
         la $s2, Second_Player_Board
+        li $s3, 2
         jal input_ship
 
         li $v0, 4
         la $a0, input_4x1
         syscall
         la $s2, Second_Player_Board
+        li $s3, 3
         jal input_ship
 
         j Hit
 
-#làm function để nhập kiểm tra 
+#làm function ?? nh?p ki?m tra 
         
 input_ship:
 
@@ -201,7 +213,7 @@ input_ship:
         syscall
         move $t3, $v0
 
-         # Kiểm tra tọa độ nhập vào có hợp lệ không
+         # Ki?m tra t?a ?? nh?p vào có h?p l? không
     blt $t0, 0, invalid_coordinates
     bgt $t0, 6, invalid_coordinates
     blt $t1, 0, invalid_coordinates
@@ -211,6 +223,7 @@ input_ship:
     blt $t3, 0, invalid_coordinates
     bgt $t3, 6, invalid_coordinates
 
+
 compare_x:
         ble $t0,$t2,compare_y 
         move $t4, $t0
@@ -218,11 +231,39 @@ compare_x:
         move $t2, $t4
 
 compare_y:
-        ble $t1,$t3,start_row
+        ble $t1,$t3,check_ship
         move $t4, $t1 
         move $t1, $t3
         move $t3, $t4
 
+check_ship:
+        sub $t4, $t2, $t0
+        sub $t5, $t3, $t1
+        seq $t6, $t4, $s3
+        seq $t7, $t5, $s3
+        xor $t8, $t6, $t7
+        beq $t8, $zero, invalid_coordinates # check the exact cordinate òf ship
+
+        add $t5, $t0, $zero
+check_row:
+        add $t4, $t1, $zero
+check_col:
+        mul $t6, $t5,7 
+        add $t6, $t6, $t4
+        sll $t6, $t6, 2
+        add $t6, $t6, $s2
+        beq $t6, 1, invalid_coordinates
+
+end_check_col:
+        addi $t4, $t4, 1
+        ble $t4, $t3, check_col
+end_check_row:
+        addi $t5, $t5, 1
+        ble $t5, $t2, check_row
+        
+		add $t4, $0, $0
+        	add $t5, $0, $0
+        
 start_row:
         add $t4, $t1, $zero
 start_col:
@@ -241,7 +282,7 @@ end_row:
         jr $ra
 
 invalid_coordinates:
-    # Hiển thị thông báo về tọa độ không hợp lệ
+    # Hi?n th? thông báo v? t?a ?? không h?p l?
     li $v0, 4
     la $a0, Error_input_ship
     syscall
@@ -249,7 +290,7 @@ invalid_coordinates:
 
 
 
-# bây giờ là lúc bắn tạo vào lặp ròi check bên ngoài là xong.
+# bây gi? là lúc b?n t?o vào l?p ròi check bên ngoài là xong.
 
 Hit:
         li $v0, 4
@@ -266,6 +307,7 @@ Hit:
                 syscall
 
                 la $s2, Second_Player_Board
+                
                 jal hit_ship
 
                 jal check_end_game
@@ -276,6 +318,7 @@ Hit:
                 syscall
 
                 la $s2, First_Player_Board
+                
                 jal hit_ship
 
                 jal check_end_game
@@ -323,17 +366,22 @@ invalid_hit:
         la $a0, Error_hit
         syscall
         j hit_ship
+jump_ra:
+        jr $ra
 
 check_end_game:
         li $t0, 0
-        sll $t1, $t0, 2
-        add $t1, $t0, $s2
-        beq $t1, 1, jump_ra
-        addi $t0, $t0, 1
-        bgt $t0, 48, end_game
+        
+        loop_check_end_game:
+                sll $t1, $t0, 2
+                add $t1, $t1, $s2
+                lw $t8, 0($t1)
+                beq $t8, 1, jump_ra
+                addi $t0, $t0, 1
+                bgt $t0, 48, end_game
+                j loop_check_end_game
 
-jump_ra:
-        jr $ra
+
 Playagain:
         la $s0, First_Player_Board
         la $s1, Second_Player_Board
@@ -363,5 +411,7 @@ end_game:
         li $v0, 4
         la $a0, byebye
         syscall
+        
+        
 
 
